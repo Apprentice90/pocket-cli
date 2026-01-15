@@ -44,9 +44,34 @@ esac
 export PATH="$NODE_DIR/bin:$SCRIPT_DIR/claude-code/bin:$PATH"
 export npm_config_prefix="$SCRIPT_DIR/claude-code"
 export ANTHROPIC_CONFIG_DIR="$SCRIPT_DIR/config"
+mkdir -p "$ANTHROPIC_CONFIG_DIR"
 export NODE_PATH="$SCRIPT_DIR/claude-code/lib/node_modules"
 
+# Load API key from .env file if it exists
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    # Export variables from .env (skip comments and empty lines)
+    set -a
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        case "$key" in
+            \#*|"") continue ;;
+        esac
+        # Remove surrounding quotes from value if present
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        export "$key=$value"
+    done < "$SCRIPT_DIR/.env"
+    set +a
+fi
+
 echo "Config stored at: $ANTHROPIC_CONFIG_DIR"
+if [ -n "$ANTHROPIC_API_KEY" ]; then
+    echo "API Key: Loaded from .env"
+else
+    echo "API Key: Not set - will use interactive login"
+fi
 echo ""
 
 # Change to specified directory if provided
