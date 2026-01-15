@@ -56,9 +56,9 @@ if not defined GIT_BASH_FOUND (
 
 REM Check if git is in PATH
 if not defined GIT_BASH_FOUND (
-    where git >nul 2>&1
-    if %errorlevel%==0 (
-        for /f "delims=" %%i in ('where git') do (
+    where git >nul 2>nul
+    if not errorlevel 1 (
+        for /f "delims=" %%i in ('where git 2^>nul') do (
             set "GIT_PATH=%%~dpi"
             goto :found_git_path
         )
@@ -70,36 +70,39 @@ if not defined GIT_BASH_FOUND (
     )
 )
 
-REM If no Git Bash found, download MinGit
-if not defined GIT_BASH_FOUND (
-    echo.
-    echo Git Bash not found. Claude Code requires Git Bash on Windows.
-    echo.
-    echo Options:
-    echo   1. Download MinGit automatically (~35MB^) - Recommended
-    echo   2. Exit and install Git for Windows manually
-    echo.
-    set /p INSTALL_CHOICE="Enter choice (1 or 2): "
+REM If no Git Bash found, prompt to download MinGit
+if not defined GIT_BASH_FOUND goto :prompt_git_install
+goto :git_ready
 
-    if "%INSTALL_CHOICE%"=="1" (
-        call :download_mingit
-        if errorlevel 1 (
-            echo.
-            echo Failed to download MinGit. Please install Git for Windows manually.
-            echo https://git-scm.com/downloads/win
-            pause
-            exit /b 1
-        )
-        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
-        set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
-        set "GIT_BASH_FOUND=1"
-    ) else (
-        echo.
-        echo Please install Git for Windows from: https://git-scm.com/downloads/win
-        pause
-        exit /b 1
-    )
+:prompt_git_install
+echo.
+echo Git Bash not found. Claude Code requires Git Bash on Windows.
+echo.
+echo Options:
+echo   1. Download MinGit automatically (~35MB) - Recommended
+echo   2. Exit and install Git for Windows manually
+echo.
+set /p INSTALL_CHOICE="Enter choice (1 or 2): "
+
+if "%INSTALL_CHOICE%"=="1" goto :do_mingit_install
+echo.
+echo Please install Git for Windows from: https://git-scm.com/downloads/win
+pause
+exit /b 1
+
+:do_mingit_install
+call :download_mingit
+if errorlevel 1 (
+    echo.
+    echo Failed to download MinGit. Please install Git for Windows manually.
+    echo https://git-scm.com/downloads/win
+    pause
+    exit /b 1
 )
+set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
+set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
+
+:git_ready
 
 REM Change to specified directory if provided, otherwise stay in current directory
 if not "%~1"=="" (
