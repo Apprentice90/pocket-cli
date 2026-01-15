@@ -20,6 +20,10 @@ set "ANTHROPIC_CONFIG_DIR=%SCRIPT_DIR%\config"
 REM Set NODE_PATH so require() can find the modules
 set "NODE_PATH=%SCRIPT_DIR%\claude-code\lib\node_modules"
 
+REM Set Git Bash path for Claude Code (required on Windows)
+REM Adjust this path if Git is installed in a different location
+set "CLAUDE_CODE_GIT_BASH_PATH=C:\Program Files\Git\bin\bash.exe"
+
 REM Change to specified directory if provided, otherwise stay in current directory
 if not "%~1"=="" (
     cd /d "%~1"
