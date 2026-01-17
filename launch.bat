@@ -44,18 +44,22 @@ if exist "%SCRIPT_DIR%\bin\git-win\cmd\git.exe" (
         set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
         set "GIT_BASH_FOUND=1"
         echo Using bundled PortableGit
-    ) else if exist "%SCRIPT_DIR%\bin\git-win\usr\bin\sh.exe" (
-        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\sh.exe"
+    ) else if exist "%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe" (
+        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe"
         set "GIT_BASH_FOUND=1"
         echo Using bundled MinGit
     )
-    if defined GIT_BASH_FOUND set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
+    REM Add both cmd and usr\bin to PATH for Unix utilities (cygpath, etc.)
+    if defined GIT_BASH_FOUND (
+        set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%SCRIPT_DIR%\bin\git-win\usr\bin;%SCRIPT_DIR%\bin\git-win\bin;%PATH%"
+    )
 )
 
 REM Check standard Git for Windows locations
 if not defined GIT_BASH_FOUND (
     if exist "C:\Program Files\Git\bin\bash.exe" (
         set "CLAUDE_CODE_GIT_BASH_PATH=C:\Program Files\Git\bin\bash.exe"
+        set "PATH=C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin;C:\Program Files\Git\bin;%PATH%"
         set "GIT_BASH_FOUND=1"
     )
 )
@@ -63,6 +67,7 @@ if not defined GIT_BASH_FOUND (
 if not defined GIT_BASH_FOUND (
     if exist "C:\Program Files (x86)\Git\bin\bash.exe" (
         set "CLAUDE_CODE_GIT_BASH_PATH=C:\Program Files (x86)\Git\bin\bash.exe"
+        set "PATH=C:\Program Files (x86)\Git\cmd;C:\Program Files (x86)\Git\usr\bin;C:\Program Files (x86)\Git\bin;%PATH%"
         set "GIT_BASH_FOUND=1"
     )
 )
@@ -112,8 +117,9 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
-set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
+REM MinGit has bash in usr\bin
+set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe"
+set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%SCRIPT_DIR%\bin\git-win\usr\bin;%SCRIPT_DIR%\bin\git-win\bin;%PATH%"
 
 :git_ready
 
