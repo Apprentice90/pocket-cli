@@ -367,8 +367,9 @@ if [ -d "$SCRIPT_DIR/claude-code/lib/node_modules/@anthropic-ai/claude-code" ]; 
     # Create manual bin wrapper since --no-bin-links skips symlinks
     mkdir -p "$SCRIPT_DIR/claude-code/bin"
     cat > "$SCRIPT_DIR/claude-code/bin/claude" << 'WRAPPER'
-#!/usr/bin/env node
-require('@anthropic-ai/claude-code/cli.js');
+#!/bin/sh
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec node "$SCRIPT_DIR/../lib/node_modules/@anthropic-ai/claude-code/cli.js" "$@"
 WRAPPER
     chmod +x "$SCRIPT_DIR/claude-code/bin/claude" 2>/dev/null || true
 
