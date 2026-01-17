@@ -96,15 +96,15 @@ goto :git_ready
 echo.
 echo Git Bash not found. Claude Code requires Git Bash on Windows.
 echo.
-echo Options:
-echo   1. Download MinGit automatically (~35MB) - Recommended
-echo   2. Exit and install Git for Windows manually
+echo MinGit should have been installed by setup.sh. Options:
+echo   1. Download MinGit now (~35MB)
+echo   2. Exit and run setup.sh again
 echo.
 set /p INSTALL_CHOICE="Enter choice (1 or 2): "
 
 if "%INSTALL_CHOICE%"=="1" goto :do_mingit_install
 echo.
-echo Please install Git for Windows from: https://git-scm.com/downloads/win
+echo Please run setup.sh to install all required components.
 pause
 exit /b 1
 

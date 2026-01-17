@@ -65,9 +65,9 @@ show_menu() {
     echo ""
 
     if $INSTALL_WIN; then
-        echo -e "  ${GREEN}[✓]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~28MB)${NC}"
+        echo -e "  ${GREEN}[✓]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~63MB, includes MinGit)${NC}"
     else
-        echo -e "  ${DIM}[ ]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~28MB)${NC}"
+        echo -e "  ${DIM}[ ]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~63MB, includes MinGit)${NC}"
     fi
 
     if $INSTALL_MAC_X64; then
@@ -101,7 +101,7 @@ show_menu() {
 
     # Calculate total size
     local total=0
-    $INSTALL_WIN && total=$((total + 28))
+    $INSTALL_WIN && total=$((total + 63))
     $INSTALL_MAC_X64 && total=$((total + 40))
     $INSTALL_MAC_ARM && total=$((total + 38))
     $INSTALL_LINUX_X64 && total=$((total + 26))
@@ -247,7 +247,7 @@ echo -e "${DIM}Installing to: $SCRIPT_DIR${NC}"
 
 # Count selected platforms for step numbering
 TOTAL_STEPS=2  # directories + claude code install
-$INSTALL_WIN && TOTAL_STEPS=$((TOTAL_STEPS + 1))
+$INSTALL_WIN && TOTAL_STEPS=$((TOTAL_STEPS + 2))  # Node.js + MinGit
 $INSTALL_MAC_X64 && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 $INSTALL_MAC_ARM && TOTAL_STEPS=$((TOTAL_STEPS + 1))
 $INSTALL_LINUX_X64 && TOTAL_STEPS=$((TOTAL_STEPS + 1))
@@ -269,7 +269,7 @@ if [ ! -f "$SCRIPT_DIR/config/.claude.json" ]; then
 CLAUDEJSON
     print_info "Created portable config to skip authentication"
 fi
-$INSTALL_WIN && mkdir -p bin/node-win
+$INSTALL_WIN && mkdir -p bin/node-win bin/git-win
 $INSTALL_MAC_X64 && mkdir -p bin/node-mac
 $INSTALL_MAC_ARM && mkdir -p bin/node-mac-arm
 $INSTALL_LINUX_X64 && mkdir -p bin/node-linux
@@ -280,6 +280,24 @@ CURRENT_STEP=$((CURRENT_STEP + 1))
 if $INSTALL_WIN; then
     print_step $CURRENT_STEP $TOTAL_STEPS "Downloading Node.js for Windows x64"
     download_node "Windows x64" "node-${NODE_VERSION}-win-x64.zip" "bin/node-win" "28MB"
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    print_step $CURRENT_STEP $TOTAL_STEPS "Downloading MinGit for Windows"
+    MINGIT_VERSION="2.47.1"
+    MINGIT_URL="https://github.com/git-for-windows/git/releases/download/v${MINGIT_VERSION}.windows.1/MinGit-${MINGIT_VERSION}-64-bit.zip"
+    echo -e "  ${DIM}Downloading (~35MB)...${NC}"
+    download_file "$MINGIT_URL" "mingit.zip"
+    print_success "Downloaded MinGit"
+    echo -e "  ${DIM}Extracting...${NC}"
+    if command -v unzip &> /dev/null; then
+        unzip -q mingit.zip -d bin/git-win
+    elif command -v python3 &> /dev/null; then
+        python3 -c "import zipfile; zipfile.ZipFile('mingit.zip').extractall('bin/git-win')"
+    elif command -v powershell.exe &> /dev/null; then
+        powershell.exe -Command "Expand-Archive -Path 'mingit.zip' -DestinationPath 'bin/git-win' -Force"
+    fi
+    rm -f mingit.zip
+    print_success "Extracted MinGit"
     CURRENT_STEP=$((CURRENT_STEP + 1))
 fi
 
