@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Claude Code macOS App Bundle Launcher
+# Opens Terminal and runs the main launch.sh script
+#
+
+# Get the path to the .app bundle
+APP_PATH="$0"
+# Navigate up from MacOS/launch to the USB root
+USB_ROOT="$(cd "$(dirname "$APP_PATH")/../../.." && pwd)"
+
+# Check if launch.sh exists
+if [ ! -f "$USB_ROOT/launch.sh" ]; then
+    osascript -e 'display alert "Error" message "launch.sh not found. Please ensure this app is on the Claude Code USB drive root."'
+    exit 1
+fi
+
+# Open Terminal and run launch.sh
+osascript << EOF
+tell application "Terminal"
+    activate
+    do script "cd '$USB_ROOT' && ./launch.sh"
+end tell
+EOF

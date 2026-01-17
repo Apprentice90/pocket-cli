@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Claude Code
+Comment=Launch Claude Code from USB
+Exec=./launch.sh
+Icon=utilities-terminal
+Terminal=true
+Categories=Development;
