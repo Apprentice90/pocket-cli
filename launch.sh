@@ -43,26 +43,34 @@ esac
 # Set up environment
 export PATH="$NODE_DIR/bin:$SCRIPT_DIR/claude-code/bin:$PATH"
 export npm_config_prefix="$SCRIPT_DIR/claude-code"
-export CLAUDE_CONFIG_DIR="$SCRIPT_DIR/config"
-mkdir -p "$CLAUDE_CONFIG_DIR"
 export NODE_PATH="$SCRIPT_DIR/claude-code/lib/node_modules"
 
-# Portable credentials: sync from USB to ~/.claude/ on startup
-# Claude stores OAuth credentials in ~/.claude/.credentials.json regardless of CLAUDE_CONFIG_DIR
-USB_CREDS="$SCRIPT_DIR/config/.credentials.json"
+# Config directory: use local on Linux (avoids exfat permission issues), USB on macOS
+USB_CONFIG="$SCRIPT_DIR/config"
+USB_CREDS="$USB_CONFIG/.credentials.json"
 LOCAL_CLAUDE_DIR="$HOME/.claude"
 LOCAL_CREDS="$LOCAL_CLAUDE_DIR/.credentials.json"
 
+if [ "$OS" = "Linux" ]; then
+    # Linux: use local config dir to avoid FAT/exFAT permission issues
+    export CLAUDE_CONFIG_DIR="$HOME/.pocket-claude"
+    mkdir -p "$CLAUDE_CONFIG_DIR"
+    echo "Config: Using local directory (Linux)"
+else
+    # macOS: use USB config directly (HFS+/APFS handle permissions fine)
+    export CLAUDE_CONFIG_DIR="$USB_CONFIG"
+    mkdir -p "$CLAUDE_CONFIG_DIR"
+fi
+
 mkdir -p "$LOCAL_CLAUDE_DIR"
 
-# If USB has credentials, copy them to local (enables cross-machine portability)
+# Portable credentials: sync from USB to local on startup
 if [ -f "$USB_CREDS" ]; then
-    cp "$USB_CREDS" "$LOCAL_CREDS"
+    cp "$USB_CREDS" "$LOCAL_CREDS" 2>/dev/null
     echo "Auth: Credentials loaded from USB"
 fi
 
 # Create .claude.json to skip authentication if it doesn't exist
-# This marks onboarding as complete so API key can be used without login
 if [ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ]; then
     cat > "$CLAUDE_CONFIG_DIR/.claude.json" << 'CLAUDEJSON'
 {
@@ -91,7 +99,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     set +a
 fi
 
-echo "Config stored at: $CLAUDE_CONFIG_DIR"
+echo "Config: $CLAUDE_CONFIG_DIR"
 if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
     echo "Auth: Subscription token loaded from .env"
 elif [ -n "$ANTHROPIC_API_KEY" ]; then

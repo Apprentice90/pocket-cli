@@ -87,26 +87,44 @@ log() {
 
 log "USB launch script triggered"
 
-# Find the mount point
+# Find the device by label
+DEVICE=$(blkid -L "$USB_LABEL" 2>/dev/null)
+if [ -z "$DEVICE" ]; then
+    log "ERROR: No device with label $USB_LABEL found"
+    exit 1
+fi
+log "Found device: $DEVICE"
+
+# Find the mount point or mount it
 MOUNT_POINT=""
 
-# Wait for mount (up to 10 seconds)
-for i in {1..20}; do
-    # Check common mount locations
-    for mp in "/media/$USER/$USB_LABEL" "/run/media/$USER/$USB_LABEL" "/mnt/$USB_LABEL"; do
-        if [ -d "$mp" ] && [ -f "$mp/launch.sh" ]; then
-            MOUNT_POINT="$mp"
-            break 2
-        fi
-    done
+# First check if already mounted
+MOUNT_POINT=$(findmnt -rn -S LABEL="$USB_LABEL" -o TARGET 2>/dev/null | head -1)
 
-    # Also check by label using findmnt
-    mp=$(findmnt -rn -S LABEL="$USB_LABEL" -o TARGET 2>/dev/null | head -1)
-    if [ -n "$mp" ] && [ -f "$mp/launch.sh" ]; then
-        MOUNT_POINT="$mp"
-        break
+if [ -z "$MOUNT_POINT" ]; then
+    log "Device not mounted, attempting to mount..."
+
+    # Try udisksctl first (works without root, creates /media/$USER/label)
+    if command -v udisksctl &>/dev/null; then
+        udisksctl mount -b "$DEVICE" 2>/dev/null
+        sleep 1
+        MOUNT_POINT=$(findmnt -rn -S LABEL="$USB_LABEL" -o TARGET 2>/dev/null | head -1)
     fi
 
+    # Fallback: manual mount to /mnt
+    if [ -z "$MOUNT_POINT" ]; then
+        MOUNT_POINT="/mnt/$USB_LABEL"
+        mkdir -p "$MOUNT_POINT"
+        mount "$DEVICE" "$MOUNT_POINT" 2>/dev/null || true
+    fi
+fi
+
+# Wait for mount to complete (up to 5 seconds)
+for i in {1..10}; do
+    if [ -n "$MOUNT_POINT" ] && [ -f "$MOUNT_POINT/launch.sh" ]; then
+        break
+    fi
+    MOUNT_POINT=$(findmnt -rn -S LABEL="$USB_LABEL" -o TARGET 2>/dev/null | head -1)
     sleep 0.5
 done
 
