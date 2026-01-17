@@ -43,9 +43,20 @@ esac
 # Set up environment
 export PATH="$NODE_DIR/bin:$SCRIPT_DIR/claude-code/bin:$PATH"
 export npm_config_prefix="$SCRIPT_DIR/claude-code"
-export ANTHROPIC_CONFIG_DIR="$SCRIPT_DIR/config"
-mkdir -p "$ANTHROPIC_CONFIG_DIR"
+export CLAUDE_CONFIG_DIR="$SCRIPT_DIR/config"
+mkdir -p "$CLAUDE_CONFIG_DIR"
 export NODE_PATH="$SCRIPT_DIR/claude-code/lib/node_modules"
+
+# Create .claude.json to skip authentication if it doesn't exist
+# This marks onboarding as complete so API key can be used without login
+if [ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ]; then
+    cat > "$CLAUDE_CONFIG_DIR/.claude.json" << 'CLAUDEJSON'
+{
+  "hasCompletedOnboarding": true,
+  "lastOnboardingVersion": "2.1.0"
+}
+CLAUDEJSON
+fi
 
 # Load API key from .env file if it exists
 if [ -f "$SCRIPT_DIR/.env" ]; then
@@ -66,11 +77,13 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     set +a
 fi
 
-echo "Config stored at: $ANTHROPIC_CONFIG_DIR"
-if [ -n "$ANTHROPIC_API_KEY" ]; then
-    echo "API Key: Loaded from .env"
+echo "Config stored at: $CLAUDE_CONFIG_DIR"
+if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+    echo "Auth: Subscription token loaded from .env"
+elif [ -n "$ANTHROPIC_API_KEY" ]; then
+    echo "Auth: API key loaded from .env"
 else
-    echo "API Key: Not set - will use interactive login"
+    echo "Auth: Not configured - see .env.example"
 fi
 echo ""
 

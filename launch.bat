@@ -15,8 +15,14 @@ REM Set npm global prefix to USB drive
 set "npm_config_prefix=%SCRIPT_DIR%\claude-code"
 
 REM Set Claude config directory to USB drive (create if doesn't exist)
-set "ANTHROPIC_CONFIG_DIR=%SCRIPT_DIR%\config"
-if not exist "%ANTHROPIC_CONFIG_DIR%" mkdir "%ANTHROPIC_CONFIG_DIR%"
+set "CLAUDE_CONFIG_DIR=%SCRIPT_DIR%\config"
+if not exist "%CLAUDE_CONFIG_DIR%" mkdir "%CLAUDE_CONFIG_DIR%"
+
+REM Create .claude.json to skip authentication if it doesn't exist
+REM This marks onboarding as complete so API key can be used without login
+if not exist "%CLAUDE_CONFIG_DIR%\.claude.json" (
+    echo {"hasCompletedOnboarding": true, "lastOnboardingVersion": "2.1.0"} > "%CLAUDE_CONFIG_DIR%\.claude.json"
+)
 
 REM Set NODE_PATH so require() can find the modules
 set "NODE_PATH=%SCRIPT_DIR%\claude-code\lib\node_modules"
@@ -118,11 +124,13 @@ if not "%~1"=="" (
 
 REM Launch Claude Code
 echo Starting Claude Code...
-echo Config stored at: %ANTHROPIC_CONFIG_DIR%
-if defined ANTHROPIC_API_KEY (
-    echo API Key: Loaded from .env
+echo Config stored at: %CLAUDE_CONFIG_DIR%
+if defined CLAUDE_CODE_OAUTH_TOKEN (
+    echo Auth: Subscription token loaded from .env
+) else if defined ANTHROPIC_API_KEY (
+    echo Auth: API key loaded from .env
 ) else (
-    echo API Key: Not set - will use interactive login
+    echo Auth: Not configured - see .env.example
 )
 echo.
 

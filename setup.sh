@@ -257,6 +257,18 @@ CURRENT_STEP=1
 
 print_step $CURRENT_STEP $TOTAL_STEPS "Creating directory structure"
 mkdir -p claude-code config
+
+# Create .claude.json to skip onboarding when using API key
+# This file tells Claude Code that onboarding is already complete
+if [ ! -f "$SCRIPT_DIR/config/.claude.json" ]; then
+    cat > "$SCRIPT_DIR/config/.claude.json" << 'CLAUDEJSON'
+{
+  "hasCompletedOnboarding": true,
+  "lastOnboardingVersion": "2.1.0"
+}
+CLAUDEJSON
+    print_info "Created portable config to skip authentication"
+fi
 $INSTALL_WIN && mkdir -p bin/node-win
 $INSTALL_MAC_X64 && mkdir -p bin/node-mac
 $INSTALL_MAC_ARM && mkdir -p bin/node-mac-arm
@@ -405,6 +417,7 @@ $INSTALL_WIN && echo -e "  ${YELLOW}Windows:${NC}       Double-click ${BOLD}laun
 ($INSTALL_MAC_X64 || $INSTALL_MAC_ARM || $INSTALL_LINUX_X64) && echo -e "  ${YELLOW}Mac/Linux:${NC}     Run ${BOLD}./launch.sh${NC}"
 $INSTALL_LINUX_ARM && echo -e "  ${YELLOW}Android/Quest:${NC} In Termux, run ${BOLD}bash ./launch.sh${NC}"
 echo ""
-echo -e "${DIM}On first run, authenticate once. Credentials are stored${NC}"
-echo -e "${DIM}in config/ and persist across machines.${NC}"
+echo -e "${DIM}Configure authentication in .env (copy from .env.example):${NC}"
+echo -e "${DIM}  - API Key: ANTHROPIC_API_KEY (pay-per-use)${NC}"
+echo -e "${DIM}  - Subscription: CLAUDE_CODE_OAUTH_TOKEN (run 'claude setup-token')${NC}"
 echo ""
