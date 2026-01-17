@@ -31,12 +31,19 @@ if exist "%SCRIPT_DIR%\.env" (
 REM Check for Git Bash - try multiple locations
 set "GIT_BASH_FOUND="
 
-REM First check if we have bundled MinGit
+REM First check if we have bundled Git (PortableGit or MinGit)
 if exist "%SCRIPT_DIR%\bin\git-win\cmd\git.exe" (
-    set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
-    set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
-    set "GIT_BASH_FOUND=1"
-    echo Using bundled MinGit
+    REM Check for bash.exe (PortableGit) or sh.exe (MinGit)
+    if exist "%SCRIPT_DIR%\bin\git-win\bin\bash.exe" (
+        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
+        set "GIT_BASH_FOUND=1"
+        echo Using bundled PortableGit
+    ) else if exist "%SCRIPT_DIR%\bin\git-win\usr\bin\sh.exe" (
+        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\sh.exe"
+        set "GIT_BASH_FOUND=1"
+        echo Using bundled MinGit
+    )
+    if defined GIT_BASH_FOUND set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%PATH%"
 )
 
 REM Check standard Git for Windows locations
