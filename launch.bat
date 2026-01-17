@@ -18,6 +18,20 @@ REM Set Claude config directory to USB drive (create if doesn't exist)
 set "CLAUDE_CONFIG_DIR=%SCRIPT_DIR%\config"
 if not exist "%CLAUDE_CONFIG_DIR%" mkdir "%CLAUDE_CONFIG_DIR%"
 
+REM Portable credentials: sync from USB to local on startup
+REM Claude stores OAuth credentials in %USERPROFILE%\.claude\ regardless of CLAUDE_CONFIG_DIR
+set "USB_CREDS=%SCRIPT_DIR%\config\.credentials.json"
+set "LOCAL_CLAUDE_DIR=%USERPROFILE%\.claude"
+set "LOCAL_CREDS=%LOCAL_CLAUDE_DIR%\.credentials.json"
+
+if not exist "%LOCAL_CLAUDE_DIR%" mkdir "%LOCAL_CLAUDE_DIR%"
+
+REM If USB has credentials, copy them to local (enables cross-machine portability)
+if exist "%USB_CREDS%" (
+    copy /y "%USB_CREDS%" "%LOCAL_CREDS%" >nul 2>&1
+    echo Auth: Credentials loaded from USB
+)
+
 REM Create .claude.json to skip authentication if it doesn't exist
 REM This marks onboarding as complete so API key can be used without login
 if not exist "%CLAUDE_CONFIG_DIR%\.claude.json" (
@@ -146,6 +160,12 @@ if exist "%SCRIPT_DIR%\claude-code\claude.cmd" (
     echo Please run setup.sh first to install Claude Code.
     pause
     exit /b 1
+)
+
+REM After exit: save credentials back to USB (captures new logins)
+if exist "%LOCAL_CREDS%" (
+    copy /y "%LOCAL_CREDS%" "%USB_CREDS%" >nul 2>&1
+    echo Credentials saved to USB
 )
 
 REM Keep window open if double-clicked

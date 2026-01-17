@@ -47,6 +47,20 @@ export CLAUDE_CONFIG_DIR="$SCRIPT_DIR/config"
 mkdir -p "$CLAUDE_CONFIG_DIR"
 export NODE_PATH="$SCRIPT_DIR/claude-code/lib/node_modules"
 
+# Portable credentials: sync from USB to ~/.claude/ on startup
+# Claude stores OAuth credentials in ~/.claude/.credentials.json regardless of CLAUDE_CONFIG_DIR
+USB_CREDS="$SCRIPT_DIR/config/.credentials.json"
+LOCAL_CLAUDE_DIR="$HOME/.claude"
+LOCAL_CREDS="$LOCAL_CLAUDE_DIR/.credentials.json"
+
+mkdir -p "$LOCAL_CLAUDE_DIR"
+
+# If USB has credentials, copy them to local (enables cross-machine portability)
+if [ -f "$USB_CREDS" ]; then
+    cp "$USB_CREDS" "$LOCAL_CREDS"
+    echo "Auth: Credentials loaded from USB"
+fi
+
 # Create .claude.json to skip authentication if it doesn't exist
 # This marks onboarding as complete so API key can be used without login
 if [ ! -f "$CLAUDE_CONFIG_DIR/.claude.json" ]; then
@@ -94,4 +108,12 @@ if [ -n "$1" ] && [ -d "$1" ]; then
 fi
 
 # Launch Claude Code with any remaining arguments
-exec claude --dangerously-skip-permissions "$@"
+claude --dangerously-skip-permissions "$@"
+EXIT_CODE=$?
+
+# After exit: save credentials back to USB (captures new logins)
+if [ -f "$LOCAL_CREDS" ]; then
+    cp "$LOCAL_CREDS" "$USB_CREDS" 2>/dev/null && echo "Credentials saved to USB"
+fi
+
+exit $EXIT_CODE
