@@ -65,9 +65,9 @@ show_menu() {
     echo ""
 
     if $INSTALL_WIN; then
-        echo -e "  ${GREEN}[✓]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~63MB, includes MinGit)${NC}"
+        echo -e "  ${GREEN}[✓]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~83MB, includes PortableGit)${NC}"
     else
-        echo -e "  ${DIM}[ ]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~63MB, includes MinGit)${NC}"
+        echo -e "  ${DIM}[ ]${NC} ${BOLD}1${NC}  Windows x64         ${DIM}(~83MB, includes PortableGit)${NC}"
     fi
 
     if $INSTALL_MAC_X64; then
@@ -101,7 +101,7 @@ show_menu() {
 
     # Calculate total size
     local total=0
-    $INSTALL_WIN && total=$((total + 63))
+    $INSTALL_WIN && total=$((total + 83))
     $INSTALL_MAC_X64 && total=$((total + 40))
     $INSTALL_MAC_ARM && total=$((total + 38))
     $INSTALL_LINUX_X64 && total=$((total + 26))
@@ -282,22 +282,26 @@ if $INSTALL_WIN; then
     download_node "Windows x64" "node-${NODE_VERSION}-win-x64.zip" "bin/node-win" "28MB"
     CURRENT_STEP=$((CURRENT_STEP + 1))
 
-    print_step $CURRENT_STEP $TOTAL_STEPS "Downloading MinGit for Windows"
-    MINGIT_VERSION="2.47.1"
-    MINGIT_URL="https://github.com/git-for-windows/git/releases/download/v${MINGIT_VERSION}.windows.1/MinGit-${MINGIT_VERSION}-64-bit.zip"
-    echo -e "  ${DIM}Downloading (~35MB)...${NC}"
-    download_file "$MINGIT_URL" "mingit.zip"
-    print_success "Downloaded MinGit"
-    echo -e "  ${DIM}Extracting...${NC}"
-    if command -v unzip &> /dev/null; then
-        unzip -q mingit.zip -d bin/git-win
-    elif command -v python3 &> /dev/null; then
-        python3 -c "import zipfile; zipfile.ZipFile('mingit.zip').extractall('bin/git-win')"
+    print_step $CURRENT_STEP $TOTAL_STEPS "Downloading PortableGit for Windows"
+    GIT_VERSION="2.47.1"
+    GIT_URL="https://github.com/git-for-windows/git/releases/download/v${GIT_VERSION}.windows.1/PortableGit-${GIT_VERSION}-64-bit.7z.exe"
+    echo -e "  ${DIM}Downloading (~55MB)...${NC}"
+    download_file "$GIT_URL" "portablegit.7z.exe"
+    print_success "Downloaded PortableGit"
+    echo -e "  ${DIM}Extracting (this may take a moment)...${NC}"
+    # PortableGit is a self-extracting 7z archive - run with -y to auto-extract
+    if command -v 7z &> /dev/null; then
+        7z x -obin/git-win -y portablegit.7z.exe >/dev/null
     elif command -v powershell.exe &> /dev/null; then
-        powershell.exe -Command "Expand-Archive -Path 'mingit.zip' -DestinationPath 'bin/git-win' -Force"
+        # Use the self-extractor silently
+        chmod +x portablegit.7z.exe 2>/dev/null || true
+        ./portablegit.7z.exe -y -o"bin/git-win" 2>/dev/null || \
+        powershell.exe -Command "Start-Process -FilePath './portablegit.7z.exe' -ArgumentList '-y', '-obin/git-win' -Wait -NoNewWindow" 2>/dev/null
+    else
+        echo -e "  ${YELLOW}Note: Extract portablegit.7z.exe manually to bin/git-win${NC}"
     fi
-    rm -f mingit.zip
-    print_success "Extracted MinGit"
+    rm -f portablegit.7z.exe
+    print_success "Extracted PortableGit"
     CURRENT_STEP=$((CURRENT_STEP + 1))
 fi
 

@@ -37,22 +37,12 @@ if exist "%SCRIPT_DIR%\.env" (
 REM Check for Git Bash - try multiple locations
 set "GIT_BASH_FOUND="
 
-REM First check if we have bundled Git (PortableGit or MinGit)
-if exist "%SCRIPT_DIR%\bin\git-win\cmd\git.exe" (
-    REM Check for bash.exe (PortableGit) or sh.exe (MinGit)
-    if exist "%SCRIPT_DIR%\bin\git-win\bin\bash.exe" (
-        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
-        set "GIT_BASH_FOUND=1"
-        echo Using bundled PortableGit
-    ) else if exist "%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe" (
-        set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe"
-        set "GIT_BASH_FOUND=1"
-        echo Using bundled MinGit
-    )
-    REM Add both cmd and usr\bin to PATH for Unix utilities (cygpath, etc.)
-    if defined GIT_BASH_FOUND (
-        set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%SCRIPT_DIR%\bin\git-win\usr\bin;%SCRIPT_DIR%\bin\git-win\bin;%PATH%"
-    )
+REM First check if we have bundled PortableGit
+if exist "%SCRIPT_DIR%\bin\git-win\bin\bash.exe" (
+    set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
+    set "GIT_BASH_FOUND=1"
+    set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%SCRIPT_DIR%\bin\git-win\usr\bin;%SCRIPT_DIR%\bin\git-win\bin;%PATH%"
+    echo Using bundled PortableGit
 )
 
 REM Check standard Git for Windows locations
@@ -96,29 +86,28 @@ goto :git_ready
 echo.
 echo Git Bash not found. Claude Code requires Git Bash on Windows.
 echo.
-echo MinGit should have been installed by setup.sh. Options:
-echo   1. Download MinGit now (~35MB)
+echo PortableGit should have been installed by setup.sh. Options:
+echo   1. Download PortableGit now (~55MB)
 echo   2. Exit and run setup.sh again
 echo.
 set /p INSTALL_CHOICE="Enter choice (1 or 2): "
 
-if "%INSTALL_CHOICE%"=="1" goto :do_mingit_install
+if "%INSTALL_CHOICE%"=="1" goto :do_git_install
 echo.
 echo Please run setup.sh to install all required components.
 pause
 exit /b 1
 
-:do_mingit_install
-call :download_mingit
+:do_git_install
+call :download_portablegit
 if errorlevel 1 (
     echo.
-    echo Failed to download MinGit. Please install Git for Windows manually.
+    echo Failed to download PortableGit. Please install Git for Windows manually.
     echo https://git-scm.com/downloads/win
     pause
     exit /b 1
 )
-REM MinGit has bash in usr\bin
-set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\usr\bin\bash.exe"
+set "CLAUDE_CODE_GIT_BASH_PATH=%SCRIPT_DIR%\bin\git-win\bin\bash.exe"
 set "PATH=%SCRIPT_DIR%\bin\git-win\cmd;%SCRIPT_DIR%\bin\git-win\usr\bin;%SCRIPT_DIR%\bin\git-win\bin;%PATH%"
 
 :git_ready
@@ -140,6 +129,15 @@ if defined CLAUDE_CODE_OAUTH_TOKEN (
 )
 echo.
 
+REM Check Node.js is accessible
+where node >nul 2>nul
+if errorlevel 1 (
+    echo ERROR: Node.js not found in PATH
+    echo Expected at: %NODE_DIR%
+    pause
+    exit /b 1
+)
+
 REM Use the Windows batch wrapper
 if exist "%SCRIPT_DIR%\claude-code\claude.cmd" (
     call "%SCRIPT_DIR%\claude-code\claude.cmd" --dangerously-skip-permissions %2 %3 %4 %5 %6 %7 %8 %9
@@ -147,45 +145,50 @@ if exist "%SCRIPT_DIR%\claude-code\claude.cmd" (
     echo ERROR: Claude Code not found at %SCRIPT_DIR%\claude-code\claude.cmd
     echo Please run setup.sh first to install Claude Code.
     pause
+    exit /b 1
 )
+
+REM Keep window open if double-clicked
+echo.
+pause
 exit /b 0
 
 REM ========================================
-REM Function to download MinGit
+REM Function to download PortableGit
 REM ========================================
-:download_mingit
+:download_portablegit
 echo.
-echo Downloading MinGit for Windows...
+echo Downloading PortableGit for Windows...
 echo.
 
-set "MINGIT_URL=https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/MinGit-2.47.1-64-bit.zip"
-set "MINGIT_ZIP=%SCRIPT_DIR%\mingit.zip"
-set "MINGIT_DIR=%SCRIPT_DIR%\bin\git-win"
+set "GIT_URL=https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/PortableGit-2.47.1-64-bit.7z.exe"
+set "GIT_EXE=%SCRIPT_DIR%\portablegit.7z.exe"
+set "GIT_DIR=%SCRIPT_DIR%\bin\git-win"
 
 REM Create directory
-if not exist "%MINGIT_DIR%" mkdir "%MINGIT_DIR%"
+if not exist "%GIT_DIR%" mkdir "%GIT_DIR%"
 
-REM Download using PowerShell (available on all modern Windows)
-echo Downloading from GitHub...
-powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%MINGIT_URL%' -OutFile '%MINGIT_ZIP%' -UseBasicParsing}"
+REM Download using PowerShell
+echo Downloading from GitHub (~55MB)...
+powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '%GIT_URL%' -OutFile '%GIT_EXE%' -UseBasicParsing}"
 if errorlevel 1 (
     echo Download failed.
     exit /b 1
 )
 
-REM Extract using PowerShell
-echo Extracting MinGit...
-powershell -Command "& {Expand-Archive -Path '%MINGIT_ZIP%' -DestinationPath '%MINGIT_DIR%' -Force}"
+REM Extract using the self-extracting archive
+echo Extracting PortableGit (this may take a moment)...
+"%GIT_EXE%" -y -o"%GIT_DIR%"
 if errorlevel 1 (
     echo Extraction failed.
-    del "%MINGIT_ZIP%" 2>nul
+    del "%GIT_EXE%" 2>nul
     exit /b 1
 )
 
 REM Clean up
-del "%MINGIT_ZIP%" 2>nul
+del "%GIT_EXE%" 2>nul
 
 echo.
-echo MinGit installed successfully!
+echo PortableGit installed successfully!
 echo.
 exit /b 0
