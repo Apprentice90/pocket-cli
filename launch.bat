@@ -143,11 +143,12 @@ if defined CLAUDE_CODE_OAUTH_TOKEN (
 )
 echo.
 
-REM Check Node.js is accessible
-where node >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: Node.js not found in PATH
-    echo Expected at: %NODE_DIR%
+REM Check Node.js is accessible - use direct file check for WinPE compatibility
+if not exist "%NODE_DIR%\node.exe" (
+    echo ERROR: Node.js not found
+    echo Expected at: %NODE_DIR%\node.exe
+    echo.
+    echo Please ensure setup.sh was run with Windows platform selected.
     pause
     exit /b 1
 )
